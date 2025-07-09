@@ -3,6 +3,13 @@ import sqlite3
 from flask_cors import CORS, cross_origin
 import os
 
+# cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
+# cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
+# print(f"=== DATABASE LOCATIONS ===")
+# print(f"CPF Database: {cpf_db_path}")
+# print(f"CNPJ Database: {cnpj_db_path}")
+# print(f"==========================")
+
 app = Flask(__name__)
 CORS(app)
 
@@ -14,7 +21,8 @@ def connect_success():
 @app.route("/get-person-by-name/<name>")
 @cross_origin()
 def get_person_by_name(name):
-    conn_cpf = sqlite3.connect('db/basecpf.db')
+    cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
+    conn_cpf = sqlite3.connect(cpf_db_path)
     cursor_cpf = conn_cpf.cursor()
     cursor_cpf.execute("SELECT * FROM cpf WHERE nome LIKE UPPER(?)", ('%' + name + '%',))
     results = cursor_cpf.fetchall()
@@ -35,7 +43,8 @@ def get_person_by_name(name):
 @app.route("/get-person-by-exact-name/<name>")
 @cross_origin()
 def get_person_by_exact_name(name):
-    conn_cpf = sqlite3.connect('db/basecpf.db')
+    cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
+    conn_cpf = sqlite3.connect(cpf_db_path)
     cursor_cpf = conn_cpf.cursor()
     cursor_cpf.execute("SELECT * FROM cpf WHERE nome = UPPER(?)", (name,))
     results = cursor_cpf.fetchall()
@@ -56,7 +65,8 @@ def get_person_by_exact_name(name):
 @app.route("/get-person-by-cpf/<cpf>", methods=['GET'])
 @cross_origin()
 def get_person_by_cpf(cpf):
-    conn_cpf = sqlite3.connect('db/basecpf.db')
+    cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
+    conn_cpf = sqlite3.connect(cpf_db_path)
     cursor_cpf = conn_cpf.cursor()
     cursor_cpf.execute("SELECT * FROM cpf WHERE cpf = ?", (cpf,))
     results = cursor_cpf.fetchall()
@@ -77,8 +87,10 @@ def get_person_by_cpf(cpf):
 @app.route("/get-person-cnpj-by-name/<name>")
 @cross_origin()
 def get_person_cnpj_by_name(name):
-    conn_cnpj = sqlite3.connect('db/cnpj.db')
-    conn_cpf = sqlite3.connect('db/basecpf.db')
+    cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
+    cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
+    conn_cnpj = sqlite3.connect(cnpj_db_path)
+    conn_cpf = sqlite3.connect(cpf_db_path)
     cursor_cnpj = conn_cnpj.cursor()
     cursor_cpf = conn_cpf.cursor()
     cursor_cnpj.execute("SELECT * FROM socios WHERE nome LIKE UPPER(?)", ('%' + name + '%',))
@@ -98,7 +110,8 @@ def get_person_cnpj_by_name(name):
 @app.route("/get-person-cnpj-by-name-cpf/<name>-<cpf>")
 @cross_origin()
 def get_person_cnpj_by_cpf(name, cpf):
-    conn_cnpj = sqlite3.connect('db/cnpj.db')
+    cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
+    conn_cnpj = sqlite3.connect(cnpj_db_path)
     cursor_cnpj = conn_cnpj.cursor()
     cursor_cnpj.execute("SELECT * FROM socios WHERE representante_legal LIKE ? AND nome_representante LIKE ?", ('%' + cpf[3:9] + '%', '%' + name + '%',))
     results = cursor_cnpj.fetchall()
@@ -118,7 +131,8 @@ def get_person_cnpj_by_cpf(name, cpf):
 @app.route("/get-person-cnpj-by-name-cpf-radical/<name>-<cpf>")
 @cross_origin()
 def get_person_cnpj_by_cpf_radical(name, cpf):
-    conn_cnpj = sqlite3.connect('db/cnpj.db')
+    cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
+    conn_cnpj = sqlite3.connect(cnpj_db_path)
     cursor_cnpj = conn_cnpj.cursor()
     cursor_cnpj.execute("SELECT * FROM socios WHERE cpf_cnpj LIKE ? AND nome LIKE ?", ('%' + cpf[3:9] + '%', '%' + name + '%',))
     results = cursor_cnpj.fetchall()
