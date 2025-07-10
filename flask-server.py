@@ -4,13 +4,15 @@ from flask_cors import CORS
 import os
 import ssl
 from argon2 import PasswordHasher
+import datetime
+import json
 
 
 app = Flask(__name__)
 
 USERS = {
-    "admin" : "admin",
-    "teste" : "teste"
+    "admin@mail.com" : "admin123",
+    "teste@mail.com" : "teste123"
 }
 
 # Configuração CORS
@@ -42,15 +44,45 @@ def after_request(response):
     print("Response data:", response.get_data(as_text=True))
     return response
 
+# LOGIN
+
+USER_SESSIONS = {}
+
+def save_sessions_to_json():
+    try:
+        with open('user_sessions.json', 'w', encoding='utf-8') as f:
+            json.dump(USER_SESSIONS, f, indent=2, ensure_ascii=False, default=str)
+    except Exception as e:
+        print(f"Erro ao salvar sessões: {e}")
+
 # Rota Login
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     data = request.json
     username = data.get('username')
     password = data.get('password')
     if username in USERS and USERS[username] == password:
-        session['user'] = username
-        return jsonify({"message": "Login successful!"}), 200
+        # Criar timestamp do login
+        login_timestamp = datetime.datetime.now().isoformat()
+        
+        # Armazenar informações da sessão
+        USER_SESSIONS[username] = {
+            'username': username,
+            'login_timestamp': login_timestamp,
+        }
+        
+        # Salvar sessões no arquivo JSON
+        save_sessions_to_json()
+        
+        return jsonify({
+            "message": "Login successful!",
+            "username": username,
+            "login_timestamp": login_timestamp
+        }), 200
+    
     return jsonify({"message": "Invalid credentials"}), 401
 
 # Rotas SQL
