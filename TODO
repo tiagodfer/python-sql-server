@@ -1,0 +1,15 @@
+- server
+    (x) buscar por nome exato
+    (x) buscar por parte do nome
+    (x) buscar por cpf
+    (x) json
+    ( ) buscar todos cnpj por nome
+    ( ) buscar todos cnpj por nome e cpf
+- client
+    ( ) interface pyqt
+    ( ) exibir dados
+    ( ) exibir dados das empresas da qual cpf é sócio
+- extras
+    ( ) VueJS + flask
+    ( ) API
+    ( ) permitir seleção de pessoa encontrada na busca de cnpj

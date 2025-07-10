@@ -1,0 +1,91 @@
+# Projeto Cliente-Servidor SQL
+
+Este projeto implementa uma arquitetura cliente-servidor para consulta a bancos de dados usando SQLite. O componente servidor fornece uma interface gráfica (GUI) para gerenciar conexões com o banco de dados e lidar com as solicitações dos clientes, enquanto o componente cliente ([em um projeto separado](https://github.com/lrafaelz/FrontClientServer-multithread)) se conecta ao servidor para obter informações dos bancos de dados.
+
+## Funcionalidades
+
+- Servidor com interface gráfica construída usando PyQt6
+- Suporte para consultas de banco de dados de CPF
+- Arquitetura multiprocessada para lidar com múltiplas conexões de clientes
+- Comunicação segura por socket entre cliente e servidor
+- Manipulação de consultas de banco de dados com SQLite
+
+## Instalação
+
+1. Clone este repositório:
+```bash
+git clone <repository-url>
+cd sql-client-server
+```
+
+2. Crie um ambiente virtual (recomendado):
+```bash
+python -m venv venv
+```
+
+3. Ative o ambiente virtual:
+- No Windows:
+```bash
+.\venv\Scripts\activate
+```
+- No Linux/Mac:
+```bash
+source venv/bin/activate
+```
+
+4. Instale as dependências necessárias:
+```bash
+pip install -r requirements.txt
+```
+
+## Uso
+
+1. Inicie o servidor:
+```bash
+python server.py
+```
+
+2. Na interface gráfica do servidor:
+   - Selecione o arquivo do banco de dados CPF
+   - Selecione o arquivo do banco de dados CNPJ
+   - Insira o host (padrão: 127.0.0.1)
+   - Insira a porta (padrão: 5000)
+   - Clique em "Start Server"
+
+3. O aplicativo cliente (em um projeto separado) pode agora se conectar ao servidor para consultar os bancos de dados.
+
+## Estrutura do Projeto
+
+- `server.py`: Aplicativo principal do servidor com GUI
+- `queries.py`: Funções de consulta ao banco de dados
+- `random_cpf_generator.py`: Utilitário para gerar listas aleatórias de CPFs e nomes do banco de dados
+- `requirements.txt`: Dependências do projeto
+- `README.md`: Documentação do projeto
+
+### Utilitário de Geração de CPFs Aleatórios
+
+O arquivo `random_cpf_generator.py` é uma ferramenta de linha de comando para gerar listas de CPFs e nomes aleatórios a partir do banco de dados. Use-o assim:
+
+```bash
+# Gera 10 CPFs aleatórios (padrão)
+python random_cpf_generator.py
+
+# Gera um número específico de CPFs (exemplo: 20)
+python random_cpf_generator.py -q 20
+
+# Salva os resultados em dois arquivos CSV separados (para CPFs e nomes)
+python random_cpf_generator.py -q 50 -o lista_resultados
+
+# O comando acima vai gerar dois arquivos:
+# - lista_resultados_cpfs.csv (contendo CPFs separados por vírgula)
+# - lista_resultados_names.csv (contendo nomes separados por vírgula na mesma ordem dos CPFs)
+
+# Usa um caminho de banco de dados personalizado
+python random_cpf_generator.py -d caminho/para/banco.db
+```
+
+Os resultados são formatados como valores separados por vírgula (CSV), gerados em dois arquivos distintos, mantendo a mesma ordem de registros em ambos os arquivos.
+
+## Nota
+
+Este é o componente servidor do projeto. O componente cliente está em um repositório separado. Certifique-se de que ambos os componentes estejam devidamente configurados para funcionar juntos.

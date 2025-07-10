@@ -3,8 +3,15 @@ import sqlite3
 from flask_cors import CORS
 import os
 import ssl
+from argon2 import PasswordHasher
+
 
 app = Flask(__name__)
+
+USERS = {
+    "admin" : "admin",
+    "teste" : "teste"
+}
 
 # Configuração CORS
 CORS(app, resources={
@@ -35,6 +42,18 @@ def after_request(response):
     print("Response data:", response.get_data(as_text=True))
     return response
 
+# Rota Login
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    if username in USERS and USERS[username] == password:
+        session['user'] = username
+        return jsonify({"message": "Login successful!"}), 200
+    return jsonify({"message": "Invalid credentials"}), 401
+
+# Rotas SQL
 @app.route("/get-person-by-name/<name>", methods=['GET', 'OPTIONS'])
 def get_person_by_name(name):
     if request.method == 'OPTIONS':
