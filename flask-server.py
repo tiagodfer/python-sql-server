@@ -31,11 +31,11 @@ def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', origin)
     else:
         response.headers.add('Access-Control-Allow-Origin', '*')
-    
+
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Origin,Accept')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
-    
+
     # Headers para debug
     print("Status:", response.status)
     print("Headers:", response.headers)
@@ -58,7 +58,7 @@ def login():
 def get_person_by_name(name):
     if request.method == 'OPTIONS':
         return '', 200
-        
+
     cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
     try:
         conn_cpf = sqlite3.connect(cpf_db_path)
@@ -66,7 +66,7 @@ def get_person_by_name(name):
         cursor_cpf.execute("SELECT * FROM cpf WHERE nome LIKE UPPER(?)", ('%' + name + '%',))
         results = cursor_cpf.fetchall()
         conn_cpf.close()
-        
+
         if results:
             cpf_list = []
             for row in results:
@@ -87,7 +87,7 @@ def get_person_by_name(name):
 def get_person_by_exact_name(name):
     if request.method == 'OPTIONS':
         return '', 200
-        
+
     cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
     try:
         conn_cpf = sqlite3.connect(cpf_db_path)
@@ -95,7 +95,7 @@ def get_person_by_exact_name(name):
         cursor_cpf.execute("SELECT * FROM cpf WHERE nome = UPPER(?)", (name,))
         results = cursor_cpf.fetchall()
         conn_cpf.close()
-        
+
         if results:
             cpf_list = []
             for row in results:
@@ -116,7 +116,7 @@ def get_person_by_exact_name(name):
 def get_person_by_cpf(cpf):
     if request.method == 'OPTIONS':
         return '', 200
-        
+
     cpf_db_path = os.environ.get('CPF_DB_PATH', 'db/basecpf.db')
     try:
         conn_cpf = sqlite3.connect(cpf_db_path)
@@ -124,7 +124,7 @@ def get_person_by_cpf(cpf):
         cursor_cpf.execute("SELECT * FROM cpf WHERE cpf = ?", (cpf,))
         results = cursor_cpf.fetchall()
         conn_cpf.close()
-        
+
         if results:
             cpf_list = []
             for row in results:
@@ -141,99 +141,78 @@ def get_person_by_cpf(cpf):
     except Exception as e:
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
-@app.route("/get-person-cnpj-by-name/<name>", methods=['GET', 'OPTIONS'])
-def get_person_cnpj_by_name(name):
+@app.route("/get-person-cnpj-by-name-and-cpf/<name>/<cpf>", methods=['GET', 'OPTIONS'])
+def get_person_cnpj_by_name(name, cpf):
     if request.method == 'OPTIONS':
         return '', 200
-        
+
     cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
     try:
         conn_cnpj = sqlite3.connect(cnpj_db_path)
         cursor_cnpj = conn_cnpj.cursor()
-        cursor_cnpj.execute("SELECT * FROM socios WHERE nome LIKE UPPER(?)", ('%' + name + '%',))
+        cursor_cnpj.execute("SELECT nome_socio, nome_representante, cnpj_cpf_socio FROM socios WHERE (nome_socio LIKE UPPER(?) OR nome_representante LIKE UPPER(?)) AND cnpj_cpf_socio LIKE ?", ('%' + name + '%', '%' + name + '%', '%' + cpf[3:-2] + '%'))
         results = cursor_cnpj.fetchall()
         conn_cnpj.close()
-        
+
         if results:
-            cpf_list = []
+            cnpj_list = []
             for row in results:
-                cpf_info = {
-                    'cpf': row[3],
-                    'nome': row[2],
+                cnpj_info = {
+                    'nome fantasia': row[0],
+                    'nome': row[1],
+                    'cpf': row[2],
                 }
-                cpf_list.append(cpf_info)
-            return jsonify({'results': cpf_list}), 200
+                cnpj_list.append(cnpj_info)
+            return jsonify({'results': cnpj_list}), 200
         else:
             return jsonify({'error': 'Nome não encontrado'}), 404
     except Exception as e:
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
-@app.route("/get-person-cnpj-by-name-cpf/<name>-<cpf>", methods=['GET', 'OPTIONS'])
-def get_person_cnpj_by_cpf(name, cpf):
+@app.route("/get-cnpj-person-by-cnpj/<cnpj>", methods=['GET', 'OPTIONS'])
+def get_person_cnpj_by_cpf(cnpj):
     if request.method == 'OPTIONS':
         return '', 200
-        
-    cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
-    try:
-        conn_cnpj = sqlite3.connect(cnpj_db_path)
-        cursor_cnpj = conn_cnpj.cursor()
-        cursor_cnpj.execute("SELECT * FROM socios WHERE representante_legal LIKE ? AND nome_representante LIKE ?", ('%' + cpf[3:9] + '%', '%' + name + '%',))
-        results = cursor_cnpj.fetchall()
-        conn_cnpj.close()
-        
-        if results:
-            cpf_list = []
-            for row in results:
-                cpf_info = {
-                    'nome fantasia': row[2],
-                    'nome': row[8],
-                    'cpf': row[7]
-                }
-                cpf_list.append(cpf_info)
-            return jsonify({'results': cpf_list}), 200
-        else:
-            return jsonify({'error': 'Não é sócio de nenhuma empresa'}), 404
-    except Exception as e:
-        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
-@app.route("/get-person-cnpj-by-name-cpf-radical/<name>-<cpf>", methods=['GET', 'OPTIONS'])
-def get_person_cnpj_by_cpf_radical(name, cpf):
-    if request.method == 'OPTIONS':
-        return '', 200
-        
     cnpj_db_path = os.environ.get('CNPJ_DB_PATH', 'db/cnpj.db')
     try:
         conn_cnpj = sqlite3.connect(cnpj_db_path)
         cursor_cnpj = conn_cnpj.cursor()
-        cursor_cnpj.execute("SELECT * FROM socios WHERE cpf_cnpj LIKE ? AND nome LIKE ?", ('%' + cpf[3:9] + '%', '%' + name + '%',))
+        cursor_cnpj.execute(
+            "SELECT cnpj, nome_fantasia, uf FROM estabelecimento WHERE cnpj_basico = ?",
+            (cnpj,)
+        )
         results = cursor_cnpj.fetchall()
-        
-        if results:
-            cpf_list = []
-            for row in results:
-                cpf_info = {
-                    '0 - cpf': row[3],
-                    '0 - nome': row[2],
+
+        cnpj_list = []
+        for row in results:
+            cnpj_basico = row[0]
+            cursor_cnpj.execute(
+                "SELECT nome_socio, nome_representante, cnpj_cpf_socio FROM socios WHERE cnpj_basico = ?",
+                (cnpj_basico,)
+            )
+            socios = cursor_cnpj.fetchall()
+            socios_list = [
+                {
+                    'nome_socio': s[0],
+                    'nome_representante': s[1],
+                    'cnpj_cpf_socio': s[2]
                 }
-                cpf_list.append(cpf_info)
-                cursor_cnpj.execute("SELECT * FROM estabelecimentos WHERE radical = ?", (row[0],))
-                results_est = cursor_cnpj.fetchall()
-                num_empresa = 0
-                if results_est:
-                    for row_est in results_est:
-                        num_empresa += 1
-                        key = f'{num_empresa} nome fantasia'
-                        key2 = f'{num_empresa} rua'
-                        key3 = f'{num_empresa} num'
-                        key4 = f'{num_empresa} estado'
-                        cpf_info[key] = row_est[4]
-                        cpf_info[key2] = row_est[14]
-                        cpf_info[key3] = row_est[15]
-                        cpf_info[key4] = row_est[19]
-            conn_cnpj.close()
-            return jsonify({'results': cpf_list}), 200
+                for s in socios
+            ]
+            cpf_info = {
+                'cnpj': row[0],
+                'nome fantasia': row[1],
+                'uf': row[2],
+                'socios': socios_list
+            }
+            cnpj_list.append(cnpj_info)
+
+        conn_cnpj.close()
+
+        if cnpj_list:
+            return jsonify({'results': cnpj_list}), 200
         else:
-            conn_cnpj.close()
             return jsonify({'error': 'Não é sócio de nenhuma empresa'}), 404
     except Exception as e:
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
@@ -252,13 +231,13 @@ def create_ssl_context():
 if __name__ == "__main__":
     host = os.environ.get("FLASK_RUN_HOST", "127.0.0.1")
     port = int(os.environ.get("FLASK_RUN_PORT", "5000"))
-    
+
     # Configuração SSL
     ssl_context = create_ssl_context()
-    
+
     print(f"Servidor Flask iniciando em https://{host}:{port}")
     print("Certificados SSL configurados")
-    
+
     app.run(
         host=host, 
         port=port, 
