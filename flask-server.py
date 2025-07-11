@@ -159,7 +159,6 @@ def get_person_cnpj_by_name_and_cpf(name, cpf):
     try:
         conn_cnpj = sqlite3.connect(cnpj_db_path)
         cursor_cnpj = conn_cnpj.cursor()
-        # First query: get CNPJs from socios
         cursor_cnpj.execute(
             "SELECT cnpj FROM socios WHERE (nome_socio LIKE UPPER(?) OR nome_representante LIKE UPPER(?)) AND cnpj_cpf_socio LIKE ?",
             ('%' + name + '%', '%' + name + '%', '%' + cpf[3:-2] + '%')
@@ -168,21 +167,50 @@ def get_person_cnpj_by_name_and_cpf(name, cpf):
         if not cnpj_rows:
             conn_cnpj.close()
             return jsonify({'error': 'Nome não encontrado'}), 404
-
-        # Prepare list of CNPJs for the second query
         cnpj_list = [row[0] for row in cnpj_rows]
         results = []
         for cnpj in cnpj_list:
             cursor_cnpj.execute(
-                "SELECT cnpj, nome_fantasia, uf FROM estabelecimento WHERE cnpj = ?",
+                "SELECT cnpj, nome_fantasia, tipo_logradouro, logradouro, numero, complemento, bairro, municipio, uf, cep, ddd1, telefone1, correio_eletronico FROM estabelecimento WHERE cnpj = ?",
                 (cnpj,)
             )
             est = cursor_cnpj.fetchone()
             if est:
+                cnpj_basico = est[0][:8]
+                cursor_cnpj.execute(
+                    "SELECT razao_social FROM empresas WHERE cnpj_basico = ?",
+                    (cnpj_basico,)
+                )
+                emp = cursor_cnpj.fetchone()
+                razao_social = emp[0]
+                municipio = est[7]
+                cursor_cnpj.execute(
+                    "SELECT descricao FROM municipio WHERE codigo = ?",
+                    (municipio,)
+                )
+                mun = cursor_cnpj.fetchone()
+                municipio = mun[0]
+                endereco = ', '.join(filter(None, [
+                    est[2], # tipo_logradouro
+                    est[3], # logradouro
+                    est[4], # numero
+                    est[5], # complemento
+                    est[6], # bairro
+                    municipio, # municipio
+                    est[8], # uf
+                    est[9]  # cep
+                ]))
+                telefone = ', '.join(filter(None, [
+                    est[10], # ddd
+                    est[11]  # telefone
+                ]))
                 results.append({
                     'cnpj': est[0],
                     'nome_fantasia': est[1],
-                    'uf': est[2]
+                    'razao_social': razao_social,
+                    'endereço': endereco,
+                    'telefone': telefone,
+                    'email': est[12]
                 })
         conn_cnpj.close()
         if results:
@@ -201,16 +229,16 @@ def get_person_cnpj_by_cnpj(cnpj):
         conn_cnpj = sqlite3.connect(cnpj_db_path)
         cursor_cnpj = conn_cnpj.cursor()
         cursor_cnpj.execute(
-            "SELECT cnpj, nome_fantasia, uf FROM estabelecimento WHERE cnpj = ?",
+            "SELECT cnpj, nome_fantasia, tipo_logradouro, logradouro, numero, complemento, bairro, municipio, uf, cep, ddd1, telefone1, correio_eletronico FROM estabelecimento WHERE cnpj = ?",
             (cnpj,)
         )
         results = cursor_cnpj.fetchall()
         cnpj_list = []
         for row in results:
-            cnpj = row[0]
+            # Get socios
             cursor_cnpj.execute(
                 "SELECT nome_socio, nome_representante, cnpj_cpf_socio FROM socios WHERE cnpj = ?",
-                (cnpj,)
+                (row[0],)
             )
             print(cnpj)
             socios = cursor_cnpj.fetchall()
@@ -221,10 +249,41 @@ def get_person_cnpj_by_cnpj(cnpj):
                     'cnpj_cpf_socio': s[2]
                 } for s in socios
             ]
+            cursor_cnpj.execute(
+                "SELECT descricao FROM municipio WHERE codigo = ?",
+                (row[7],)
+            )
+            mun = cursor_cnpj.fetchone()
+            municipio = mun[0]
+            cnpj_basico = row[0][:8]
+            cursor_cnpj.execute(
+                "SELECT razao_social FROM empresas WHERE cnpj_basico = ?",
+                (cnpj_basico,)
+            )
+            emp = cursor_cnpj.fetchone()
+            razao_social = emp[0]
+            endereco = ', '.join(filter(None, [
+                row[2],  # tipo_logradouro
+                row[3],  # logradouro
+                row[4],  # numero
+                row[5],  # complemento
+                row[6],  # bairro
+                municipio,  # municipio
+                row[8],  # uf
+                row[9]   # cep
+            ]))
+            telefone = ', '.join(filter(None, [
+                row[10],  # ddd1
+                row[11]   # telefone1
+            ]))
             cnpj_info = {
                 'cnpj': row[0],
-                'nome fantasia': row[1],
-                'uf': row[2],
+                'nome_fantasia': row[1],
+                'razao_social': razao_social,
+                'endereco': endereco,
+                'telefone': telefone,
+                'email': row[12],
+                'uf': row[8],
                 'socios': socios_list
             }
             cnpj_list.append(cnpj_info)
