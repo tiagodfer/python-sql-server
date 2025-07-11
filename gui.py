@@ -128,6 +128,7 @@ class Window(QtWidgets.QWidget):
         self.start_server_button.clicked.connect(self.start_server_handler)
         self.stop_server_button.clicked.connect(self.stop_server_handler)
         self.close_button.clicked.connect(self.close)
+        self.destroyed.connect(lambda: self.stop_server_handler())
 
         # Initialize selections
         self.update_selected_host()
