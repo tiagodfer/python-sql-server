@@ -59,6 +59,8 @@ class Window(QtWidgets.QWidget):
         # Interfaces combo
         self.interface_combo = QtWidgets.QComboBox()
         self.interface_map = {}
+        self.interface_combo.addItem("All Interfaces (0.0.0.0)")
+        self.interface_map["All Interfaces (0.0.0.0)"] = "0.0.0.0"
         for name, addrs in psutil.net_if_addrs().items():
             ip = None
             for addr in addrs:
